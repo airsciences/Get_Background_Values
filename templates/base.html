@@ -6,14 +6,6 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <header>
-    <h1>EPA Background Value Estimator</h1>
-    <p class="subtitle">Facility-specific NAAQS background levels from EPA's live AQS data files.</p>
-  </header>
-  <main>
-    {% block content %}{% endblock %}
-  </main>
-
   <div id="loading-overlay" class="loading-overlay" hidden>
     <div class="loading-box">
       <div class="spinner"></div>
@@ -21,6 +13,14 @@
       <p class="hint">This can take a minute the first time a year is requested. Please don't refresh or close this tab.</p>
     </div>
   </div>
+
+  <header>
+    <h1>EPA Background Value Estimator</h1>
+    <p class="subtitle">Facility-specific NAAQS background levels from EPA's live AQS data files.</p>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
 
   <script>
     // Safety net: reset the overlay on every page show, including bfcache
