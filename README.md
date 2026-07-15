@@ -5,6 +5,8 @@ A Flask web app that reimplements the calculations from
 live from EPA's pre-generated AQS data files instead of manually-maintained
 local CSV copies.
 
+UNTESTED AS OF 7/15/2026
+
 ## What this replaces
 
 The source workbook's VBA macros only import EPA CSVs into worksheets; the
