@@ -1,0 +1,33 @@
+<p class="hint">
+  Facility: {{ facility_lat }}, {{ facility_lon }} &mdash; data year window ending {{ reference_year }}
+</p>
+
+<form id="monitor-form" method="post" action="{{ url_for('results') }}">
+  <input type="hidden" name="facility_lat" value="{{ facility_lat }}">
+  <input type="hidden" name="facility_lon" value="{{ facility_lon }}">
+  <input type="hidden" name="reference_year" value="{{ reference_year }}">
+
+  {% for standard in standards %}
+    {% set candidates = candidates_by_standard.get(standard.key, []) %}
+    <div class="standard-block">
+      <h3>{{ standard.display_name }} <span class="pill">{{ standard.aqs_standard_label }}</span></h3>
+
+      {% if candidates %}
+        <label for="site_{{ standard.key }}">Choose a representative monitor ({{ candidates|length }} found)</label>
+        <select id="site_{{ standard.key }}" name="site_{{ standard.key }}">
+          <option value="">-- skip this standard --</option>
+          {% for c in candidates %}
+            <option value="{{ c.site_name }}">
+              {{ c.site_name }} ({{ c.state_name }}) &mdash; {{ c.distance_km|km_to_mi }} mi,
+              obs count {{ c.observation_count }}, completeness {{ c.completeness_indicator or "n/a" }}
+            </option>
+          {% endfor %}
+        </select>
+      {% else %}
+        <p class="no-candidates">No monitors reporting "{{ standard.aqs_standard_label }}" were found within the requested radius.</p>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <button type="submit">Compute background values</button>
+</form>

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div id="facility-errors"></div>
+
+<form id="facility-form">
+  <fieldset>
+    <legend>Facility Location</legend>
+    <label for="facility_lat">Latitude (decimal degrees)</label>
+    <input type="number" step="any" min="-90" max="90" id="facility_lat" name="facility_lat" required>
+
+    <label for="facility_lon">Longitude (decimal degrees)</label>
+    <input type="number" step="any" min="-180" max="180" id="facility_lon" name="facility_lon" required>
+    <p class="hint">
+      <a href="https://epa.maps.arcgis.com/apps/webappviewer/index.html?id=5f239fd3e72f424f98ef3d5def547eb5&extent=-146.2334,13.1913,-46.3896,56.5319" target="_blank" rel="noopener">
+        View EPA air quality monitor map
+      </a>
+    </p>
+
+    <label for="reference_year">Most recent complete data year</label>
+    <input type="number" step="1" id="reference_year" name="reference_year" value="{{ default_year }}" required>
+    <p class="hint">The 3-year design-value window will end on this year (this year and the two before it).</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Search radius per pollutant (miles)</legend>
+    <p class="hint">Leave a pollutant set to "-- skip --" to skip it entirely.</p>
+    <div class="radius-grid">
+      {% for group in pollutant_groups %}
+        <div>
+          <label for="radius_{{ group }}">{{ group }}</label>
+          <select id="radius_{{ group }}" name="radius_{{ group }}">
+            <option value="" selected>-- skip --</option>
+            {% for mi in radius_mile_options %}
+              <option value="{{ mi }}">{{ mi }} mi</option>
+            {% endfor %}
+          </select>
+        </div>
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <button type="submit">Find candidate monitors</button>
+</form>
+
+<div id="monitor-section"></div>
+<div id="results-section"></div>
+
+<script>
+  (function () {
+    var overlay = document.getElementById("loading-overlay");
+    function showOverlay() { overlay.hidden = false; }
+    function hideOverlay() { overlay.hidden = true; }
+
+    function setBusy(form, busy) {
+      form.querySelectorAll("button[type=submit]").forEach(function (btn) {
+        btn.disabled = busy;
+      });
+    }
+
+    var facilityForm = document.getElementById("facility-form");
+    var facilityErrors = document.getElementById("facility-errors");
+    var monitorSection = document.getElementById("monitor-section");
+    var resultsSection = document.getElementById("results-section");
+
+    facilityForm.addEventListener("submit", function (event) {
+      event.preventDefault();
+      if (!facilityForm.checkValidity()) {
+        facilityForm.reportValidity();
+        return;
+      }
+
+      showOverlay();
+      setBusy(facilityForm, true);
+      facilityErrors.innerHTML = "";
+      resultsSection.innerHTML = "";
+
+      fetch("{{ url_for('search') }}", { method: "POST", body: new FormData(facilityForm) })
+        .then(function (resp) {
+          return resp.text().then(function (html) { return { ok: resp.ok, html: html }; });
+        })
+        .then(function (result) {
+          if (result.ok) {
+            monitorSection.innerHTML = result.html;
+            monitorSection.scrollIntoView({ behavior: "smooth", block: "start" });
+          } else {
+            monitorSection.innerHTML = "";
+            facilityErrors.innerHTML = result.html;
+          }
+        })
+        .catch(function () {
+          facilityErrors.innerHTML = '<div class="errors">Something went wrong contacting the server. Please try again.</div>';
+        })
+        .then(function () {
+          hideOverlay();
+          setBusy(facilityForm, false);
+        });
+    });
+
+    document.addEventListener("submit", function (event) {
+      if (event.target.id !== "monitor-form") return;
+      event.preventDefault();
+      var form = event.target;
+
+      showOverlay();
+      setBusy(form, true);
+      resultsSection.innerHTML = "";
+
+      fetch("{{ url_for('results') }}", { method: "POST", body: new FormData(form) })
+        .then(function (resp) { return resp.text(); })
+        .then(function (html) {
+          resultsSection.innerHTML = html;
+          resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+        })
+        .catch(function () {
+          resultsSection.innerHTML = '<div class="errors">Something went wrong computing results. Please try again.</div>';
+        })
+        .then(function () {
+          hideOverlay();
+          setBusy(form, false);
+        });
+    });
+  })();
+</script>
+
+{% endblock %}

@@ -1,0 +1,69 @@
+<p class="hint">
+  Facility: {{ facility_lat }}, {{ facility_lon }} &mdash; years used: {{ years_used|join(', ') }}
+</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Standard</th>
+      <th>Monitor</th>
+      <th>Background Value</th>
+      <th>Unit</th>
+      <th>Years / Detail</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in results %}
+      <tr>
+        <td>{{ r.display_name }}</td>
+        <td>{{ r.site_name or "&mdash;" | safe }}</td>
+
+        {% if r.error %}
+          <td class="error-text" colspan="3">{{ r.error }}</td>
+
+        {% elif r.method == "annual_stat" %}
+          <td>{{ "%.4g"|format(r.detail.combined_value) if r.detail.combined_value is not none else "no data" }}</td>
+          <td>{{ r.detail.unit or r.unit_hint }}</td>
+          <td>
+            {{ r.detail.year_form }} of
+            {% for y, v in r.detail.yearly_values.items() %}{{ y }}={{ "%.4g"|format(v) }}{{ ", " if not loop.last }}{% endfor %}
+          </td>
+
+        {% elif r.method == "pm25_seasonal_profile" %}
+          <td colspan="2">
+            {% for season, v in r.detail.seasonal_3yr_average.items() %}
+              {{ season }}: {{ v if v is not none else "no data" }}{{ ", " if not loop.last }}
+            {% endfor %}
+          </td>
+          <td>
+            {% for yp in r.detail.per_year %}
+              {{ yp.monitoring_year }} (valid days {{ yp.valid_days }}, 98th pct {{ "%.3g"|format(yp.percentile_98_value) if yp.percentile_98_value is not none else "n/a" }}){{ "; " if not loop.last }}
+            {% endfor %}
+          </td>
+
+        {% elif r.method == "pm10_multiyear_4th_high" %}
+          <td>{{ "%.4g"|format(r.detail.design_value) if r.detail.design_value is not none else "no data" }}</td>
+          <td>{{ r.detail.unit or r.unit_hint }}</td>
+          <td>
+            {% for yp in r.detail.per_year %}
+              {{ yp.calendar_year }}: top4={{ yp.top4 }}{{ "; " if not loop.last }}
+            {% endfor %}
+          </td>
+
+        {% elif r.method == "lead_rolling_3mo" %}
+          <td>{{ "%.4g"|format(r.detail.design_value) if r.detail.design_value is not none else "no data" }}</td>
+          <td>{{ r.detail.unit or r.unit_hint }}</td>
+          <td class="hint">max rolling 3-month mean across {{ r.detail.monthly_means|length }} months of data</td>
+
+        {% else %}
+          <td colspan="3">&mdash;</td>
+        {% endif %}
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<p class="hint">
+  Number of monitors used: exactly one per standard (manually selected), matching the source workbook's
+  representative-monitor workflow rather than an automatic multi-monitor average.
+</p>
