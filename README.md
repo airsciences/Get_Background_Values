@@ -5,7 +5,7 @@ A Flask web app that reimplements the calculations from
 live from EPA's pre-generated AQS data files instead of manually-maintained
 local CSV copies.
 
-UNTESTED AS OF 7/15/2026
+Webpage looks good and buttons work, but calculations are UNTESTED AS OF 7/15/2026
 
 ## What this replaces
 
